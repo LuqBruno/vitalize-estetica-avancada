@@ -10,6 +10,7 @@ Atualização: 16/09/2026. Nova direção visual da prévia local, com prioridad
 - Decisão vigente: usar a assinatura oficial da marca, tons quentes coordenados e composição editorial. Categorias de cuidado ficam todas visíveis, em vez de cards de Instagram ampliados.
 - Próxima ação: colher revisão visual de Bruno e validar com Bruna os retratos tratados antes de qualquer apresentação ou publicação comercial.
 - Publicação atual: não verificada nesta organização; não presumir ausência ou conclusão.
+- 17/09/2026: GitHub Pages configurado em `LuqBruno/vitalize-estetica-avancada`. Corrigidos os caminhos de CSS, scripts, fontes e imagens para a rota `/vitalize-estetica-avancada/`; publicação visual aguarda verificação no domínio público.
 - Comercial: [consultar pipeline](../../00_Leads_e_Propostas/PIPELINE.md).
 
 ## Verificações

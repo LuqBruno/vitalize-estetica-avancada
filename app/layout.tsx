@@ -15,6 +15,7 @@ const sans = Manrope({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://luqbruno.github.io/vitalize-estetica-avancada/'),
   title: 'Vitalize Estética Avançada | Criciúma',
   description: 'Atendimento estético facial e corporal personalizado, com naturalidade, individualidade e propósito em Criciúma.',
   openGraph: {
@@ -22,13 +23,13 @@ export const metadata: Metadata = {
     description: 'Beleza que ainda parece sua. Atendimento personalizado em Criciúma.',
     type: 'website',
     locale: 'pt_BR',
-    images: [{ url: '/images/vitalize-social-card.png', width: 1732, height: 909, alt: 'Vitalize — Beleza que ainda parece sua.' }],
+    images: [{ url: 'https://luqbruno.github.io/vitalize-estetica-avancada/images/vitalize-social-card.png', width: 1732, height: 909, alt: 'Vitalize — Beleza que ainda parece sua.' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Vitalize Estética Avançada',
     description: 'Beleza que ainda parece sua.',
-    images: ['/images/vitalize-social-card.png'],
+    images: ['https://luqbruno.github.io/vitalize-estetica-avancada/images/vitalize-social-card.png'],
   },
 };
 
