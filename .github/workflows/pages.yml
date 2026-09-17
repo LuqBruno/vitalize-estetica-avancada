@@ -25,8 +25,11 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           NEXT_PUBLIC_GITHUB_PAGES: 'true'
-      - name: Preservar arquivos da pasta _next
-        run: touch dist/client/.nojekyll
+      - name: Organizar assets para o caminho do GitHub Pages
+        run: |
+          mv dist/client/vitalize-estetica-avancada/_next dist/client/_next
+          rmdir dist/client/vitalize-estetica-avancada
+          touch dist/client/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist/client
