@@ -17,4 +17,6 @@ Landing page editorial e responsiva desenvolvida para a Vitalize Estética Avan�
 
 As fotografias da pasta `public/images/instagram` foram coletadas do perfil público oficial da empresa exclusivamente para esta demonstração. Antes de publicação comercial, confirme por escrito a autorização de uso das imagens, os procedimentos oferecidos, dados profissionais, endereço e canal de atendimento.
 
+Os dois retratos em `public/images/edited` são versões tratadas a partir das publicações 11 e 15, com textos sobrepostos removidos. Os originais estão preservados. A aparência da Bruna nas versões tratadas precisa ser aprovada por ela antes de qualquer uso externo.
+
 Informações não publicadas ou não confirmadas foram deliberadamente omitidas, incluindo horários completos, registro profissional e promessas de resultado.
