@@ -22,6 +22,14 @@ Nova versão em 16/09/2026: removida a tela de espera; primeira tela, filosofia,
 
 Verificado nesta versão: `npm run lint` e `npm run build` passaram; prévia em 320, 390, 430 e 1440 px sem imagens quebradas, erros de console ou rolagem horizontal; menu mobile abre, navega para Tratamentos e fecha. Não houve publicação.
 
+## Revisão de direção de arte — 05/10/2026 (somente prévia local; sem publicação)
+- Conceito: "Cuidar da beleza sem apagar a individualidade". Pétalas da asa do logo em camadas translúcidas (profundidade CSS 3D leve com ponteiro/scroll, sem WebGL nem nova dependência), arco rosado, tipografia Cormorant + Manrope, paleta quente derivada do logo.
+- Estrutura: hero → proposta → abordagem → cuidados (7 destaques, abas com teclado) → Bruna → diferenciais → ambiente → etapas (scroll fixado, câmera percorre a foto e a asa se desenha) → dúvidas → contato. FAQ novo usa só fatos já confirmados.
+- Acervo centralizado em `app/assets.ts` (função, alt, proporção, foco, aprovação, uso). Fotos de antes/depois e de pacientes ficam registradas como "não usar". Pose A (hero e etapas) e pose B (Bruna) aparecem em recortes distintos; `bruna-professional-v1.webp` ficou em reserva.
+- Verificado agora (Chrome headless + Playwright em 390, 430, 768, 1280 e 1440 px): sem rolagem horizontal, sem imagem quebrada, sem erro de console; âncoras não ficam sob o cabeçalho; menu mobile abre, fecha com Esc e devolve o foco; abas respondem a setas/Home/End e a cliques rápidos; FAQ exclusivo; movimento reduzido remove animações, parallax e fixação. Sequência do hero ≈ 1,06 s; rolagem contínua com mediana de quadro ≈ 6 ms. `npm run lint` e `npm run build` passaram.
+- Pendências: aprovação da Bruna para os retratos tratados e uso das imagens oficiais; fotos do espaço; registro profissional; descrições e indicações de cada procedimento; valores e horários; imagens de Glúteos, Preenchimento e Botox; arquivos originais de Ultraformer, Bioestimulador e ambiente (hoje 150 px); CEP do schema.org (88801-250) sem fonte registrada.
+- Próxima ação: validar com Bruna/Bruno, substituir imagens pendentes e converter os PNG de retrato (≈1,9 MB e 1,4 MB) para formato mais leve após aprovação.
+
 ## Regra de atualização
 Manter esta ficha curta. Registrar decisões detalhadas nas fontes existentes, com data.
 Não substituir dados pendentes por informação presumida nem repetir valores comerciais nesta ficha.
