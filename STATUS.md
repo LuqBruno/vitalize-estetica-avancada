@@ -32,7 +32,7 @@ Verificado nesta versão: `npm run lint` e `npm run build` passaram; prévia em 
 
 ### Refino de imagens e acabamento — 05/10/2026
 - Auditoria: retratos recortados limpos em 2×, sem franja; imagens oficiais de 150 px (Ultraformer, Bioestimulador, ambiente) ficam limitadas ao tamanho nativo; Lavieen (512 px) tem texto de postagem. Nenhuma imagem de antes/depois é usada.
-- Cópias WebP em  (≈3,9 MB → ≈320 KB); originais intactos em .
+- Cópias WebP em `public/images/optimized/` (≈3,9 MB → ≈320 KB); originais intactos em `public/images/brand/`.
 - axe-core (WCAG A/AA + boas práticas): 0 violações em 1440 e 390 px. Lint e build passaram; sem overflow nem erro de console em 390, 430, 768, 1280 e 1440 px.
 
 ## Regra de atualização
