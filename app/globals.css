@@ -48,7 +48,10 @@ h1, h2 { text-wrap: balance; }
 .wing { --w1: #e8b9b0; --w2: #c78f80; --ws: #9a6f5c; overflow: visible; width: 100%; height: auto; }
 .wing--light { --w1: #f4d8cc; --w2: #e2b3a3; --ws: #b98672; }
 .wing--brown { --w1: #a67c69; --w2: #7d5a49; --ws: #5f3e30; }
-.wing path { stroke: var(--ws); stroke-width: 1.6; stroke-linejoin: round; }
+.wing path { stroke: var(--ws); stroke-width: 1.2; stroke-linejoin: round; }
+.wing-vein { stroke-width: 0.8 !important; opacity: 0.45; }
+.wing--line { --ws: #8a604e; }
+.wing--line path:not(.wing-vein) { fill: none; stroke-width: 1.1; }
 .wing circle { fill: var(--ws); }
 
 /* Botões */
@@ -106,9 +109,12 @@ h1, h2 { text-wrap: balance; }
 .w-a { width: 54%; right: -6%; top: 0; transform: rotate(18deg); }
 .w-b { width: 38%; left: -8%; bottom: 8%; transform: rotate(-152deg); }
 .w-c { width: 11%; left: 5%; top: 34%; transform: rotate(-20deg); }
+.arch::after { content: ""; position: absolute; inset: -14px -14px 0; border: 1px solid rgba(125, 90, 73, 0.35); border-bottom: 0; border-radius: 999px 999px 0 0; }
 .arch { position: absolute; left: 12%; right: 8%; top: 7%; bottom: 0; border-radius: 999px 999px 0 0; background: linear-gradient(170deg, #f6d9cd 0%, #e3b3a4 60%, #c98f7e 100%); transform: translateZ(-20px); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
 .layer-person { display: flex; align-items: flex-end; justify-content: center; }
 .hero-person { width: auto !important; height: 96%; max-width: none; object-fit: contain; object-position: bottom; filter: drop-shadow(0 24px 30px rgba(95, 62, 48, 0.28)); }
+.hero-sign { margin-top: 28px; font-family: var(--font-display), Georgia, serif; font-style: italic; font-size: 26px; color: var(--brown-d); line-height: 1.1; }
+.hero-sign span { display: block; margin-top: 6px; font-family: var(--font-sans), sans-serif; font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; color: var(--ink); }
 .stage-caption { position: absolute; z-index: 3; left: 0; top: 13%; font-family: var(--font-display), Georgia, serif; font-style: italic; font-size: clamp(26px, 2.4vw, 36px); color: var(--brown-d); line-height: 1.1; }
 .stage-caption span { display: block; font-family: var(--font-sans), sans-serif; font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: 0.26em; text-transform: uppercase; margin-top: 6px; }
 .stage-tag { position: absolute; z-index: 3; right: 0; top: 12%; writing-mode: vertical-rl; font-size: 10px; font-weight: 600; letter-spacing: 0.34em; text-transform: uppercase; color: var(--brown-d); display: flex; gap: 12px; align-items: center; }
@@ -121,7 +127,7 @@ h1, h2 { text-wrap: balance; }
 @keyframes person-in { from { opacity: 0; transform: translateY(22px) scale(1.025); } }
 .h-in { animation: rise 0.6s var(--ease) var(--d, 0ms) both; }
 .hero h1 .line > span { animation: line-in 0.7s var(--ease) var(--d, 0ms) both; }
-.arch { animation: arch-in 0.85s var(--ease) 60ms both; }
+.arch { animation: arch-in 0.85s var(--ease) 60ms backwards; }
 .hero-person { animation: person-in 0.85s var(--ease) 150ms both; }
 
 /* Revelação ao rolar: texto sobe, imagem se abre, linha se desenha */
@@ -134,7 +140,9 @@ h1, h2 { text-wrap: balance; }
 
 /* 1. Proposta */
 .proposal { background: var(--sand); padding: clamp(88px, 12vw, 168px) 0; }
-.proposal-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr); column-gap: clamp(24px, 6vw, 96px); row-gap: 28px; align-items: end; }
+.proposal { position: relative; overflow: clip; }
+.proposal-art { position: absolute; right: 4%; top: -42%; width: min(14vw, 190px); transform: translateY(var(--py, 0px)) rotate(14deg); opacity: 0.7; pointer-events: none; }
+.proposal-grid { position: relative; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.8fr); column-gap: clamp(24px, 6vw, 96px); row-gap: 28px; align-items: end; }
 .proposal-grid > .eyebrow { grid-column: 1 / -1; }
 .proposal h2 { font-size: clamp(48px, 7.4vw, 124px); line-height: 0.92; letter-spacing: -0.04em; }
 .proposal-side { display: grid; gap: 22px; padding-bottom: 12px; }
@@ -172,7 +180,7 @@ h1, h2 { text-wrap: balance; }
 .care-visual { position: relative; aspect-ratio: 4 / 4.6; border-radius: 28px; overflow: hidden; background: linear-gradient(150deg, var(--c1), var(--c2)); display: grid; place-items: center; isolation: isolate; }
 .care-ghost { position: absolute; left: 6%; bottom: 3%; z-index: 0; font-family: var(--font-display), Georgia, serif; font-style: italic; font-size: clamp(56px, 7vw, 108px); line-height: 0.9; letter-spacing: -0.03em; color: rgba(255, 255, 255, 0.34); white-space: nowrap; }
 .care-wing { position: absolute; z-index: 0; width: 64%; right: -10%; top: -8%; transform: rotate(var(--rot)); opacity: 0.7; }
-.care-photo { position: relative; z-index: 1; width: clamp(150px, 52%, 260px); border-radius: var(--shape); overflow: hidden; background: var(--cream); box-shadow: 0 28px 50px -24px rgba(43, 31, 26, 0.7), 0 0 0 6px rgba(251, 245, 238, 0.85); }
+.care-photo { --nw: 260px; position: relative; z-index: 1; width: min(clamp(150px, 52%, 260px), var(--nw)); border-radius: var(--shape); overflow: hidden; background: var(--cream); box-shadow: 0 28px 50px -24px rgba(43, 31, 26, 0.7), 0 0 0 6px rgba(251, 245, 238, 0.85); }
 .care-photo .photo { width: 100%; height: auto; object-fit: cover; }
 .care-photo figcaption { position: absolute; inset: auto 0 0; padding: 18px 10px 9px; text-align: center; font-size: 9.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; background: linear-gradient(transparent, rgba(43, 31, 26, 0.72)); }
 .care-pending { background: rgba(251, 245, 238, 0.62); box-shadow: 0 0 0 1.5px rgba(95, 62, 48, 0.4) inset, 0 0 0 6px rgba(251, 245, 238, 0.35); padding: 16% 12% 0; display: grid; gap: 6px; justify-items: center; }
@@ -213,7 +221,7 @@ h1, h2 { text-wrap: balance; }
 .atmos-field { position: absolute; inset: 0; transform: translateY(var(--py, 0px)); }
 .atmos-field .w-g { position: absolute; width: 58%; left: 4%; top: -4%; transform: rotate(-12deg); }
 .atmos-field .w-h { position: absolute; width: 46%; right: 0; bottom: -2%; transform: rotate(158deg); opacity: 0.9; }
-.atmos-plate { position: relative; z-index: 1; width: clamp(150px, 42%, 220px); aspect-ratio: 1; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 8px rgba(251, 245, 238, 0.88), 0 30px 50px -24px rgba(43, 31, 26, 0.6); }
+.atmos-plate { --nw: 220px; position: relative; z-index: 1; width: min(clamp(150px, 42%, 220px), var(--nw)); aspect-ratio: 1; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 8px rgba(251, 245, 238, 0.88), 0 30px 50px -24px rgba(43, 31, 26, 0.6); }
 .atmos-plate .photo { width: 100%; height: 100%; object-fit: cover; }
 .atmos-plate figcaption { position: absolute; inset: auto 0 0; padding: 22px 12px 14px; text-align: center; font-size: 9.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #fff; background: linear-gradient(transparent, rgba(43, 31, 26, 0.7)); }
 .atmos-copy { display: grid; gap: 22px; justify-items: start; }
@@ -292,10 +300,11 @@ footer small { width: 100%; opacity: 0.75; line-height: 1.6; }
   .hero-copy { padding-bottom: 8px; margin-left: 0; }
   .hero h1 { font-size: clamp(58px, 12.4vw, 100px); margin: 14px 0 20px; }
   .stage { min-height: clamp(470px, 118vw, 760px); margin: 0 calc(var(--pad) * -1); }
-  .stage-caption { left: var(--pad); top: auto; bottom: 7%; }
   .stage-tag { right: calc(var(--pad) * 0.6); }
   .arch { left: 16%; right: 8%; }
 
+  .proposal, .approach, .cares, .pro, .diff, .atmos, .faq, .closing { padding-block: 64px; }
+  .proposal-art { display: none; }
   .proposal-grid, .approach-grid, .diff-grid, .faq-grid, .closing-grid, .pro-grid, .atmos-grid { grid-template-columns: 1fr; }
   .approach-head, .diff-head, .faq-head { position: static; }
   .approach-art { width: 52%; left: auto; right: -14%; bottom: -8%; opacity: 0.5; }
@@ -311,7 +320,7 @@ footer small { width: 100%; opacity: 0.75; line-height: 1.6; }
   .care-rail button[aria-selected='true'] { padding-left: 20px; background: var(--cream); color: var(--deep); border-color: var(--cream); }
   .care-panel { grid-template-columns: 1fr; gap: 22px; }
   .care-visual { aspect-ratio: 16 / 12; }
-  .care-photo { width: clamp(140px, 42%, 190px); }
+  .care-photo { width: min(clamp(140px, 42%, 190px), var(--nw)); }
   .eyebrow { letter-spacing: 0.22em; }
   .care-ghost { font-size: clamp(48px, 15vw, 84px); }
 

@@ -79,12 +79,13 @@ function WingDefs() {
     </svg>
   );
 }
-function Wing({ className = '', tone = 'rose' }: { className?: string; tone?: 'rose' | 'light' | 'brown' }) {
-  const fill = `url(#wg-${tone})`;
+function Wing({ className = '', tone = 'rose' }: { className?: string; tone?: 'rose' | 'light' | 'brown' | 'line' }) {
+  const fill = tone === 'line' ? 'none' : `url(#wg-${tone})`;
   return (
     <svg className={`wing wing--${tone} ${className}`} viewBox="0 0 220 300" aria-hidden="true" focusable="false">
       <path className="wing-big" d="M108 6C176 58 206 128 178 186C160 222 124 238 96 232C60 190 52 116 108 6Z" fill={fill} />
       <path className="wing-small" d="M92 232C122 214 162 224 172 252C146 282 108 276 82 250Z" fill={fill} />
+      <path className="wing-vein" d="M108 22C146 74 166 134 150 196" fill="none" />
       <circle cx="60" cy="268" r="3.2" /><circle cx="42" cy="276" r="2.4" /><circle cx="28" cy="280" r="1.8" />
     </svg>
   );
@@ -244,6 +245,7 @@ function Hero({ whatsapp }: { whatsapp: string }) {
           <a className="btn btn-quiet" href="#abordagem">Conhecer a abordagem</a>
         </div>
         <p className="hero-note h-in" style={{ '--d': '440ms' } as Vars}>Abre o WhatsApp oficial em nova aba. Nada é agendado até a equipe confirmar.</p>
+        <p className="hero-sign h-in" style={{ '--d': '500ms' } as Vars}>Bruna Vitali <span>Biomédica Esteta</span></p>
       </div>
       <div className="stage" aria-hidden={false}>
         <div className="stage-3d">
@@ -251,9 +253,8 @@ function Hero({ whatsapp }: { whatsapp: string }) {
           <div className="layer layer-mid" data-depth="14"><Wing className="w-b" tone="light" /></div>
           <div className="arch" />
           <div className="layer layer-person"><Photo k="heroPortrait" priority sizes="(max-width: 700px) 90vw, 46vw" className="hero-person" /></div>
-          <div className="layer layer-front" data-depth="-18"><Wing className="w-c" tone="brown" /></div>
+          <div className="layer layer-front" data-depth="-18"><Wing className="w-c" tone="line" /></div>
         </div>
-        <p className="stage-caption h-in" style={{ '--d': '400ms' } as Vars}>Bruna Vitali <span>Biomédica Esteta</span></p>
         <p className="stage-tag h-in" style={{ '--d': '460ms' } as Vars} aria-hidden="true">Facial<i /> Corporal<i /> Capilar</p>
       </div>
     </section>
@@ -264,6 +265,7 @@ function Proposal() {
   return (
     <section className="proposal" aria-labelledby="proposal-title">
       <div className="wrap proposal-grid">
+        <div className="proposal-art" aria-hidden="true" data-depth="36"><Wing tone="line" className="w-p" /></div>
         <Reveal as="p" className="eyebrow">Beleza com propósito</Reveal>
         <h2 id="proposal-title">
           <Reveal as="span" i={0} className="block">Você não precisa</Reveal>
@@ -351,7 +353,7 @@ function Cares({ whatsapp }: { whatsapp: string }) {
                     <span className="care-ghost" aria-hidden="true">{c.label}</span>
                     <Wing tone="light" className="care-wing" />
                     {c.photo
-                      ? <figure className="care-photo"><Photo k={c.photo} sizes="260px" /><figcaption>Publicação oficial</figcaption></figure>
+                      ? <figure className="care-photo" style={{ "--nw": `${Math.round(assets[c.photo].width * 1.15)}px` } as Vars}><Photo k={c.photo} sizes="260px" /><figcaption>Publicação oficial</figcaption></figure>
                       : <figure className={`care-photo care-pending${c.flip ? ' is-flip' : ''}`}><Photo k={c.icon as AssetKey} sizes="240px" /><figcaption>Imagem a confirmar</figcaption></figure>}
                   </div>
                   <div className="care-copy">
@@ -420,7 +422,7 @@ function Atmosphere() {
       <div className="wrap atmos-grid">
         <div className="atmos-art" aria-hidden="false">
           <div className="atmos-field" data-depth="22"><Wing tone="light" className="w-g" /><Wing tone="rose" className="w-h" /></div>
-          <figure className="atmos-plate" data-reveal="wipe"><Photo k="ambient" sizes="200px" /><figcaption>Publicação oficial</figcaption></figure>
+          <figure className="atmos-plate" data-reveal="wipe" style={{ "--nw": `${Math.round(assets.ambient.width * 1.15)}px` } as Vars}><Photo k="ambient" sizes="200px" /><figcaption>Publicação oficial</figcaption></figure>
         </div>
         <div className="atmos-copy">
           <Reveal as="p" className="eyebrow">Ambiente</Reveal>
