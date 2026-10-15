@@ -1,6 +1,8 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { LazyMotion, MotionConfig, domAnimation, m, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from 'motion/react';
+import type { MotionValue } from 'motion/react';
 import Image from 'next/image';
 import { assets, url } from './assets';
 import type { AssetKey } from './assets';
@@ -10,18 +12,26 @@ type Vars = CSSProperties & Record<`--${string}`, string | number>;
 
 const address = 'Ed. Millenium Saúde Center, Rua Cel. Pedro Benedet, 505, sala 503, Centro, Criciúma, SC';
 const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+const instagram = 'https://www.instagram.com/esteticavitalize/';
 
 /* ---------- Conteúdo ---------- */
-// Somente cuidados citados nos destaques oficiais. Detalhes clínicos seguem pendentes.
-const cares: { id: string; label: string; tone: [string, string]; rot: number; shape: string; icon?: AssetKey; photo?: AssetKey; flip?: boolean; text: string }[] = [
-  { id: 'gluteos', label: 'Glúteos', tone: ['#e9c7b8', '#b98370'], rot: -14, shape: '46% 54% 50% 50% / 58% 42% 58% 42%', icon: 'iconBody', text: 'Cuidado corporal em destaque nos canais oficiais da Vitalize. O que faz sentido para o seu corpo é definido na avaliação.' },
-  { id: 'lavieen', label: 'Lavieen', tone: ['#f0d6cc', '#c99484'], rot: 10, shape: '200px 200px 18px 18px', photo: 'catLavieen', text: 'Laser citado nas publicações oficiais. Indicação, intervalo e número de sessões ficam para a conversa com a Bruna.' },
-  { id: 'ultraformer', label: 'Ultraformer', tone: ['#e3c9b4', '#a9786a'], rot: -28, shape: '28px', photo: 'catUltraformer', text: 'Tecnologia apresentada pela Vitalize (Ultraformer III e MPT). A decisão acontece depois da avaliação individual.' },
-  { id: 'capilar', label: 'Capilar', tone: ['#efd9c8', '#b48a6a'], rot: 22, shape: '18px 120px 18px 120px', icon: 'iconHair', text: 'Cuidado capilar entre os destaques da clínica. Possibilidades são apresentadas na avaliação.' },
-  { id: 'preenchimento', label: 'Preenchimento', tone: ['#f3dcd2', '#bf8a7c'], rot: -6, shape: '120px 120px 120px 18px', icon: 'iconFacial', text: 'Categoria facial destacada nos canais oficiais. A Vitalize avalia cada rosto antes de indicar qualquer coisa.' },
-  { id: 'botox', label: 'Botox', tone: ['#ead3c4', '#9d7160'], rot: 34, shape: '18px 150px 18px 150px', icon: 'iconFacial', flip: true, text: 'Toxina botulínica, em destaque nos canais oficiais. Indicação e dose dependem de avaliação individual.' },
-  { id: 'bioestimulador', label: 'Bioestimulador', tone: ['#e7cdbd', '#ae8470'], rot: -20, shape: '40% 60% 38% 62% / 54% 40% 60% 46%', photo: 'catBio', text: 'Bioestimulador, citado entre os destaques oficiais. Detalhes do protocolo continuam pendentes de confirmação.' },
+// "what" e "how" são textos gerais sobre cada técnica (base em estudos e divulgação de método).
+// Sem promessa de resultado. Indicação, aplicação e recursos usados pela Vitalize são confirmados pela Bruna.
+type Protocol = { id: string; label: string; what: string; how: string; icon: AssetKey; note?: string };
+
+const protocols: Protocol[] = [
+  { id: 'gluteos', label: 'Glúteos', icon: 'iconBodyLight', what: 'Cuidado corporal voltado ao contorno e à firmeza da região glútea. A técnica depende do objetivo de cada pessoa.', how: 'Na avaliação, a Bruna explica quais recursos fazem sentido para o seu caso e o que pode ser esperado de cada um.' },
+  { id: 'celulite', label: 'Celulite', icon: 'iconBodyLight', what: 'A celulite é uma alteração do tecido logo abaixo da pele. Ela envolve fibras de sustentação mais rígidas, células de gordura maiores e circulação local mais lenta. Por ter causas combinadas, não há um único tratamento.', how: 'Entre os recursos estudados estão as ondas de choque, que estimulam o tecido e a circulação, e a radiofrequência, que aquece as camadas profundas para estimular o colágeno. Os estudos ainda são pequenos, e o plano é definido na avaliação.', note: 'Recursos usados pela Vitalize para celulite: a confirmar.' },
+  { id: 'aumento', label: 'Aumento', icon: 'iconBodyLight', what: 'Aumento é o nome dado a procedimentos que buscam mais volume ou contorno em uma área do corpo. A técnica muda muito de uma região para outra.', how: 'Antes de qualquer indicação, a Bruna avalia a área, o objetivo e o que é seguro para cada pessoa.', note: 'Área atendida: a confirmar com a Bruna.' },
+  { id: 'preenchimento', label: 'Preenchimento', icon: 'iconFacialLight', what: 'Gel de ácido hialurônico aplicado para repor volume e definir contornos no rosto. Ele é absorvido pelo organismo com o tempo, então o efeito é temporário.', how: 'A quantidade e os pontos de aplicação são definidos na avaliação, de acordo com a sua anatomia e com o que você quer melhorar.' },
+  { id: 'botox', label: 'Botox', icon: 'iconFacialLight', what: 'Toxina botulínica aplicada em pontos específicos para reduzir a contração de músculos da face que marcam linhas de expressão. O efeito é temporário.', how: 'A indicação e a dose dependem da avaliação, e a aplicação é feita por profissional habilitado.' },
+  { id: 'bioestimulador', label: 'Bioestimulador', icon: 'iconFacialLight', what: 'O bioestimulador é um material (ácido poli-L-láctico) que faz o próprio organismo produzir colágeno novo, em um processo gradual de meses. O material é absorvido com o tempo.', how: 'O efeito costuma aparecer após alguns meses. Entre os efeitos mais comuns estão nódulos e pequenos caroços, por isso o acompanhamento faz parte do cuidado.' },
+  { id: 'lavieen', label: 'Lavieen', icon: 'iconFacialLight', what: 'Laser fracionado não ablativo, com recuperação curta. Segundo a divulgação do método, é usado para textura, manchas e uniformidade da pele.', how: 'A sensação lembra pequenas ardências em sequência. A indicação e o número de sessões são definidos na avaliação.' },
+  { id: 'ultraformer', label: 'Ultraformer', icon: 'iconFacialLight', what: 'Ultrassom microfocado (HIFU) que aquece camadas profundas da pele e do tecido de sustentação, sem cortes. O calor estimula a produção de colágeno e a firmeza.', how: 'A Vitalize apresenta o Ultraformer III e o MPT. Os parâmetros e o número de sessões são definidos na avaliação.', note: 'Áreas tratadas com Ultraformer: a confirmar.' },
+  { id: 'capilar', label: 'Capilar', icon: 'iconHairLight', what: 'Cuidado voltado à saúde dos fios e do couro cabeludo. As técnicas variam conforme a queixa de cada pessoa.', how: 'A Vitalize apresenta o capilar entre os destaques. Qual recurso é usado, e para qual situação, é confirmado pela Bruna.' },
 ];
+
+const statement = 'Aqui, cada pessoa é ouvida, respeitada e cuidada em sua individualidade. A beleza começa ao reconhecer, com naturalidade, o que faz sentido para você.';
 
 const approach = [
   ['Escuta', 'Você conta o que deseja, o que incomoda e o que não quer mudar.'],
@@ -30,22 +40,9 @@ const approach = [
 ];
 
 const steps = [
-  ['Conversa inicial', 'Você compartilha o que deseja, sua história e suas dúvidas.', 'Escuta'],
-  ['Avaliação individual', 'Características e possibilidades são analisadas com atenção.', 'Olhar'],
-  ['Plano de cuidado', 'As opções são explicadas com clareza antes de qualquer procedimento.', 'Plano'],
-];
-// Câmera da fotografia em cada etapa: ponto de origem e escala do enquadramento.
-const framing: Vars[] = [
-  { '--ox': '66%', '--oy': '24%', '--sc': 1.85, '--op': '12%' },
-  { '--ox': '40%', '--oy': '40%', '--sc': 1.55, '--op': '55%' },
-  { '--ox': '82%', '--oy': '88%', '--sc': 1.7, '--op': '100%' },
-];
-
-const differentials = [
-  ['Naturalidade primeiro', 'A conversa parte de realçar o que já é seu, não de substituir sua aparência.'],
-  ['Atendimento individual', 'Cada pessoa é ouvida, respeitada e cuidada em sua individualidade.'],
-  ['Plano explicado', 'As opções são apresentadas com clareza antes de qualquer decisão.'],
-  ['Facial, corporal e capilar', 'Cuidados apresentados pela Vitalize, sempre depois de uma avaliação.'],
+  ['Conversa inicial', 'Você compartilha o que deseja, sua história e suas dúvidas.'],
+  ['Avaliação individual', 'Características e possibilidades são analisadas com atenção.'],
+  ['Plano de cuidado', 'As opções são explicadas com clareza antes de qualquer procedimento.'],
 ];
 
 const faqs = [
@@ -53,42 +50,18 @@ const faqs = [
   ['Como agendo minha avaliação?', 'Pelo canal oficial de atendimento no WhatsApp. O botão desta página abre essa conversa; nada é agendado até a equipe responder e confirmar.'],
   ['O atendimento é só facial?', 'Não. A Vitalize apresenta atendimento personalizado facial e corporal, e o cuidado capilar aparece entre os destaques.'],
   ['Os resultados são iguais para todos?', 'Não. Resultados podem variar de pessoa para pessoa, e é por isso que o plano é individual.'],
-  ['Quais são os valores e horários?', 'Ainda não foram confirmados para esta página. Consulte diretamente a Vitalize pelo canal de atendimento.'],
+  ['Quais são os valores e horários?', 'Não há valor pronto para a maior parte dos procedimentos: ele é definido depois da avaliação. Horários: consulte pelo WhatsApp.'],
   ['Onde fica a Vitalize?', address + '.'],
 ];
 
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
 /* ---------- Peças ---------- */
 function Arrow() {
-  return <span className="arrow" aria-hidden="true">→</span>;
+  return <svg className="arrow" viewBox="0 0 22 12" aria-hidden="true" focusable="false"><path d="M1 6h19M15 1l5 5-5 5" /></svg>;
 }
-
-// Pétalas inspiradas na asa do logo: camadas translúcidas, cada instância com sua rotação.
-// Gradientes ficam em um único bloco de definições com ids fixos (sem ids gerados, que divergem entre servidor e cliente).
-const gradients: Record<'rose' | 'light' | 'brown', [string, string]> = { rose: ['#e8b9b0', '#c78f80'], light: ['#f4d8cc', '#e2b3a3'], brown: ['#a67c69', '#7d5a49'] };
-function WingDefs() {
-  return (
-    <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" focusable="false">
-      <defs>
-        {Object.entries(gradients).map(([name, [a, b]]) => (
-          <linearGradient key={name} id={`wg-${name}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor={a} stopOpacity=".95" />
-            <stop offset="1" stopColor={b} stopOpacity=".35" />
-          </linearGradient>
-        ))}
-      </defs>
-    </svg>
-  );
-}
-function Wing({ className = '', tone = 'rose' }: { className?: string; tone?: 'rose' | 'light' | 'brown' | 'line' }) {
-  const fill = tone === 'line' ? 'none' : `url(#wg-${tone})`;
-  return (
-    <svg className={`wing wing--${tone} ${className}`} viewBox="0 0 220 300" aria-hidden="true" focusable="false">
-      <path className="wing-big" d="M108 6C176 58 206 128 178 186C160 222 124 238 96 232C60 190 52 116 108 6Z" fill={fill} />
-      <path className="wing-small" d="M92 232C122 214 162 224 172 252C146 282 108 276 82 250Z" fill={fill} />
-      <path className="wing-vein" d="M108 22C146 74 166 134 150 196" fill="none" />
-      <circle cx="60" cy="268" r="3.2" /><circle cx="42" cy="276" r="2.4" /><circle cx="28" cy="280" r="1.8" />
-    </svg>
-  );
+function ArrowOut() {
+  return <svg className="arrow-out" viewBox="0 0 12 12" aria-hidden="true" focusable="false"><path d="M2 10 10 2M4 2h6v6" /></svg>;
 }
 
 function Photo({ k, className = '', priority = false, sizes }: { k: AssetKey; className?: string; priority?: boolean; sizes?: string }) {
@@ -99,50 +72,25 @@ function Photo({ k, className = '', priority = false, sizes }: { k: AssetKey; cl
   return <Image className={`photo ${className}`} style={style} src={url(a.src)} alt={a.alt} width={a.width} height={a.height} priority={priority} sizes={sizes} onError={() => setFailed(true)} />;
 }
 
-function Reveal({ as: Tag = 'div', kind = 'rise', i = 0, className = '', children }: { as?: 'div' | 'p' | 'li' | 'h2' | 'span'; kind?: 'rise' | 'wipe' | 'draw'; i?: number; className?: string; children: ReactNode }) {
+function Reveal({ as: Tag = 'div', kind = 'rise', i = 0, className = '', children }: { as?: 'div' | 'p' | 'li' | 'h2' | 'span' | 'article'; kind?: 'rise' | 'wipe' | 'draw'; i?: number; className?: string; children?: ReactNode }) {
   return <Tag className={className} data-reveal={kind} style={{ '--i': i } as Vars}>{children}</Tag>;
 }
 
-/* ---------- Movimento (um observador, um listener de scroll) ---------- */
+/* ---------- Movimento: revelação ao rolar (um observador) ---------- */
 function useMotion() {
   useEffect(() => {
     const root = document.documentElement;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
     let io: IntersectionObserver | undefined;
-    let raf = 0;
-    let depthEls: HTMLElement[] = [];
-    const tick = () => {
-      raf = 0;
-      const vh = window.innerHeight;
-      for (const el of depthEls) {
-        const r = el.getBoundingClientRect();
-        if (r.bottom < -80 || r.top > vh + 80) continue;
-        const d = Number(el.dataset.depth || 0);
-        const off = Math.max(-1, Math.min(1, (r.top + r.height / 2 - vh / 2) / vh));
-        el.style.setProperty('--py', `${(off * d).toFixed(1)}px`);
-      }
-    };
-    const onScroll = () => { if (!raf) raf = requestAnimationFrame(tick); };
     const start = () => {
       root.classList.add('motion');
       io = new IntersectionObserver((entries) => {
-        for (const e of entries) if (e.isIntersecting) { e.target.classList.add('in'); io?.unobserve(e.target); }
-      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
+        // também revela o que ficou acima da tela numa rolagem rápida
+        for (const e of entries) if (e.isIntersecting || e.boundingClientRect.bottom < 0) { e.target.classList.add('in'); io?.unobserve(e.target); }
+      }, { rootMargin: '0px 0px -8% 0px', threshold: [0, 0.12] });
       document.querySelectorAll('[data-reveal]').forEach((el) => io?.observe(el));
-      depthEls = Array.from(document.querySelectorAll<HTMLElement>('[data-depth]'));
-      window.addEventListener('scroll', onScroll, { passive: true });
-      window.addEventListener('resize', onScroll);
-      onScroll();
     };
-    const stop = () => {
-      root.classList.remove('motion');
-      io?.disconnect();
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-      if (raf) cancelAnimationFrame(raf);
-      depthEls.forEach((el) => el.style.removeProperty('--py'));
-      depthEls = [];
-    };
+    const stop = () => { root.classList.remove('motion'); io?.disconnect(); };
     const sync = () => { stop(); if (!reduce.matches) start(); };
     sync();
     reduce.addEventListener('change', sync);
@@ -150,28 +98,36 @@ function useMotion() {
   }, []);
 }
 
-// Cabeçalho: estado sticky e seção atual.
-function useHeader() {
-  const [scrolled, setScrolled] = useState(false);
+// Seção atual (menu), estado da barra e se o contato está à vista (esconde o botão fixo do celular).
+function useSections() {
   const [current, setCurrent] = useState('');
+  const [scrolled, setScrolled] = useState(false);
+  const [atContact, setAtContact] = useState(false);
+  const [atHero, setAtHero] = useState(true);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
-    const ids = ['abordagem', 'cuidados', 'bruna', 'etapas', 'duvidas', 'contato'];
+    const ids = ['protocolos', 'valores', 'bruna', 'etapas', 'duvidas', 'contato'];
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) if (e.isIntersecting) setCurrent(e.target.id);
     }, { rootMargin: '-45% 0px -50% 0px' });
     ids.forEach((id) => { const el = document.getElementById(id); if (el) io.observe(el); });
-    return () => { window.removeEventListener('scroll', onScroll); io.disconnect(); };
+    const contact = document.getElementById('contato');
+    const io2 = new IntersectionObserver(([e]) => setAtContact(e.isIntersecting), { rootMargin: '0px 0px -10% 0px' });
+    if (contact) io2.observe(contact);
+    // o botão fixo do celular só aparece depois dos botões do hero saírem da tela
+    const actions = document.querySelector('.hero-actions');
+    const io3 = new IntersectionObserver(([e]) => setAtHero(e.isIntersecting || e.boundingClientRect.top > 0), { rootMargin: '0px 0px -4% 0px' });
+    if (actions) io3.observe(actions);
+    return () => { window.removeEventListener('scroll', onScroll); io.disconnect(); io2.disconnect(); io3.disconnect(); };
   }, []);
-  return { scrolled, current };
+  return { current, scrolled, atContact, atHero };
 }
 
-/* ---------- Seções ---------- */
-function Header({ whatsapp }: { whatsapp: string }) {
+/* ---------- Barra ---------- */
+function Bar({ whatsapp, current, scrolled }: { whatsapp: string; current: string; scrolled: boolean }) {
   const [open, setOpen] = useState(false);
-  const { scrolled, current } = useHeader();
   const toggleRef = useRef<HTMLButtonElement>(null);
   const navRef = useRef<HTMLElement>(null);
   const close = useCallback((refocus = false) => { setOpen(false); if (refocus) toggleRef.current?.focus(); }, []);
@@ -186,14 +142,14 @@ function Header({ whatsapp }: { whatsapp: string }) {
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     };
-    const onResize = () => { if (window.innerWidth > 900) setOpen(false); };
+    const onResize = () => { if (window.innerWidth > 1023) setOpen(false); };
     document.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
     return () => { document.removeEventListener('keydown', onKey); window.removeEventListener('resize', onResize); };
   }, [open, close]);
-  const links: [string, string][] = [['abordagem', 'Abordagem'], ['cuidados', 'Cuidados'], ['bruna', 'Bruna Vitali'], ['etapas', 'Etapas'], ['duvidas', 'Dúvidas']];
+  const links: [string, string][] = [['protocolos', 'Protocolos'], ['valores', 'Valores'], ['bruna', 'Bruna Vitali'], ['etapas', 'Etapas'], ['duvidas', 'Dúvidas']];
   return (
-    <header className={`site-header${scrolled ? ' is-scrolled' : ''}${open ? ' is-open' : ''}`}>
+    <header className={`bar${scrolled ? ' is-scrolled' : ''}${open ? ' is-open' : ''}`}>
       <a className="brand" href="#inicio" onClick={() => close()} aria-label="Vitalize Estética Avançada — início">
         <Image src={url(assets.logo.src)} alt="Vitalize Estética Avançada" width={240} height={120} priority />
       </a>
@@ -203,7 +159,7 @@ function Header({ whatsapp }: { whatsapp: string }) {
         ))}
         <a className="nav-cta" href={whatsapp} target="_blank" rel="noreferrer" onClick={() => close()}>Agendar avaliação</a>
       </nav>
-      <a className="header-cta" href={whatsapp} target="_blank" rel="noreferrer">Agendar avaliação</a>
+      <a className="bar-cta" href={whatsapp} target="_blank" rel="noreferrer">Agendar avaliação</a>
       <button ref={toggleRef} className="menu-toggle" type="button" aria-label={open ? 'Fechar menu' : 'Abrir menu'} aria-expanded={open} aria-controls="site-nav" onClick={() => setOpen((v) => !v)}>
         <span /><span /><span />
       </button>
@@ -211,308 +167,286 @@ function Header({ whatsapp }: { whatsapp: string }) {
   );
 }
 
+/* ---------- Hero ---------- */
+// O gesto do logo: a trilha de pontos que sobe das letras até a borboleta.
+const flightDots = Array.from({ length: 12 }, (_, i) => {
+  const t = i / 11;
+  const x = (1 - t) ** 2 * 4 + 2 * (1 - t) * t * 120 + t * t * 196;
+  const y = (1 - t) ** 2 * 206 + 2 * (1 - t) * t * 214 + t * t * 150;
+  return { x: +x.toFixed(1), y: +y.toFixed(1), r: +(1.3 + t * 1.2).toFixed(2) };
+});
+
+function Flight() {
+  return (
+    <svg className="flight" viewBox="0 0 300 230" aria-hidden="true" focusable="false">
+      <m.g initial="off" animate="on" variants={{ on: { transition: { delayChildren: 0.5, staggerChildren: 0.035 } } }}>
+        {flightDots.map((d, i) => (
+          <m.circle key={i} cx={d.x} cy={d.y} r={d.r} variants={{ off: { opacity: 0 }, on: { opacity: 1, transition: { duration: 0.2 } } }} />
+        ))}
+      </m.g>
+      <m.image
+        href={url(assets.butterfly.src)} x="179" y="64" width="92" height="90"
+        style={{ transformOrigin: '225px 109px' }}
+        initial={{ opacity: 0, y: 10, rotate: -12 }}
+        animate={{ opacity: 1, y: 0, rotate: 0 }}
+        transition={{ delay: 0.92, type: 'spring', duration: 0.7, bounce: 0.25 }}
+      />
+    </svg>
+  );
+}
+
 function Hero({ whatsapp }: { whatsapp: string }) {
-  const ref = useRef<HTMLElement>(null);
-  // Inclinação sutil das camadas conforme o ponteiro (somente ponteiro fino, sem movimento reduzido).
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !window.matchMedia('(pointer: fine)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let raf = 0, x = 0, y = 0;
-    const apply = () => { raf = 0; el.style.setProperty('--mx', x.toFixed(3)); el.style.setProperty('--my', y.toFixed(3)); };
-    const move = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      x = ((e.clientX - r.left) / r.width - 0.5) * 2;
-      y = ((e.clientY - r.top) / r.height - 0.5) * 2;
-      if (!raf) raf = requestAnimationFrame(apply);
-    };
-    const leave = () => { x = 0; y = 0; if (!raf) raf = requestAnimationFrame(apply); };
-    el.addEventListener('pointermove', move);
-    el.addEventListener('pointerleave', leave);
-    return () => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerleave', leave); if (raf) cancelAnimationFrame(raf); };
-  }, []);
+  const reduce = useReducedMotion();
+  const { scrollY } = useScroll();
+  const imgY = useTransform(scrollY, [0, 800], [0, reduce ? 0 : 64]);
+  const frameY = useTransform(scrollY, [0, 800], [0, reduce ? 0 : -36]);
+  const badgeRot = useTransform(scrollY, [0, 1600], [0, reduce ? 0 : 140]);
   return (
-    <section className="hero" id="inicio" aria-labelledby="hero-title" ref={ref}>
-      <div className="hero-copy">
-        <p className="eyebrow h-in" style={{ '--d': '0ms' } as Vars}>Vitalize Estética Avançada · Criciúma, SC</p>
-        <h1 id="hero-title">
-          <span className="line"><span style={{ '--d': '80ms' } as Vars}>Beleza que</span></span>
-          <span className="line"><span style={{ '--d': '150ms' } as Vars}>ainda parece</span></span>
-          <span className="line"><span style={{ '--d': '220ms' } as Vars}><em>sua.</em></span></span>
-        </h1>
-        <p className="hero-lead h-in" style={{ '--d': '330ms' } as Vars}>Cuidar da beleza sem apagar a individualidade. Atendimento facial e corporal personalizado, com naturalidade e um olhar humano.</p>
-        <div className="hero-actions h-in" style={{ '--d': '420ms' } as Vars}>
-          <a className="btn btn-primary" href={whatsapp} target="_blank" rel="noreferrer"><span>Agendar uma avaliação</span><Arrow /></a>
-          <a className="btn btn-quiet" href="#abordagem">Conhecer a abordagem</a>
+    <section className="hero" id="inicio" aria-labelledby="hero-title">
+      <div className="wrap hero-grid">
+        <div className="hero-copy">
+          <h1 id="hero-title">
+            <span className="line"><span style={{ '--d': '40ms' } as Vars}>Beleza que</span></span>
+            <span className="line"><span style={{ '--d': '110ms' } as Vars}>ainda parece</span></span>
+            <span className="hero-sua">
+              <span className="line"><span style={{ '--d': '180ms' } as Vars}><em>sua.</em></span></span>
+              <Flight />
+            </span>
+          </h1>
+          <p className="hero-lead h-in" style={{ '--d': '300ms' } as Vars}>Cuidar da beleza sem apagar a individualidade. Atendimento facial e corporal personalizado, com naturalidade e um olhar humano.</p>
+          <div className="hero-actions h-in" style={{ '--d': '380ms' } as Vars}>
+            <a className="btn btn-primary" href={whatsapp} target="_blank" rel="noreferrer"><span>Agendar avaliação</span><Arrow /></a>
+            <a className="btn btn-ghost" href="#protocolos"><span>Ver protocolos</span></a>
+          </div>
+          <p className="hero-note h-in" style={{ '--d': '430ms' } as Vars}>Abre o WhatsApp oficial em nova aba. Nada é agendado até a equipe confirmar.</p>
         </div>
-        <p className="hero-note h-in" style={{ '--d': '440ms' } as Vars}>Abre o WhatsApp oficial em nova aba. Nada é agendado até a equipe confirmar.</p>
-        <p className="hero-sign h-in" style={{ '--d': '500ms' } as Vars}>Bruna Vitali <span>Biomédica Esteta</span></p>
-      </div>
-      <div className="stage" aria-hidden={false}>
-        <div className="stage-3d">
-          <div className="layer layer-back" data-depth="26"><Wing className="w-a" tone="rose" /></div>
-          <div className="layer layer-mid" data-depth="14"><Wing className="w-b" tone="light" /></div>
-          <div className="arch" />
-          <div className="layer layer-person"><Photo k="heroPortrait" priority sizes="(max-width: 700px) 90vw, 46vw" className="hero-person" /></div>
-          <div className="layer layer-front" data-depth="-18"><Wing className="w-c" tone="line" /></div>
-        </div>
-        <p className="stage-tag h-in" style={{ '--d': '460ms' } as Vars} aria-hidden="true">Facial<i /> Corporal<i /> Capilar</p>
+        <m.div className="hero-visual" style={{ y: frameY }}>
+          <figure className="hero-frame h-in" style={{ '--d': '120ms' } as Vars}>
+            <m.div className="hero-img" style={{ y: imgY }}>
+              <Photo k="scene" priority sizes="(max-width: 1023px) 92vw, 44vw" />
+            </m.div>
+            <span className="hero-pill">Facial · Corporal · Capilar</span>
+            <figcaption className="hero-chip">Bruna Vitali <span>Biomédica Esteta</span></figcaption>
+          </figure>
+          <m.div className="badge" style={{ rotate: badgeRot }} aria-hidden="true">
+            <svg viewBox="0 0 200 200" focusable="false">
+              <defs><path id="badge-circle" d="M100,100 m-80,0 a80,80 0 1,1 160,0 a80,80 0 1,1 -160,0" /></defs>
+              <text><textPath href="#badge-circle" textLength="494" lengthAdjust="spacing">Beleza com propósito · Naturalidade · Individualidade · </textPath></text>
+            </svg>
+            <Image className="badge-fly" src={url(assets.butterfly.src)} alt="" width={260} height={254} />
+          </m.div>
+        </m.div>
       </div>
     </section>
   );
 }
 
-function Proposal() {
+// Faixa em movimento com os procedimentos (somente os citados nos materiais)
+function Marquee() {
+  const names = protocols.map((p) => p.label);
   return (
-    <section className="proposal" aria-labelledby="proposal-title">
-      <div className="wrap proposal-grid">
-        <div className="proposal-art" aria-hidden="true" data-depth="36"><Wing tone="line" className="w-p" /></div>
-        <Reveal as="p" className="eyebrow">Beleza com propósito</Reveal>
-        <h2 id="proposal-title">
-          <Reveal as="span" i={0} className="block">Você não precisa</Reveal>
-          <Reveal as="span" i={1} className="block">caber em um padrão.</Reveal>
-        </h2>
-        <div className="proposal-side">
-          <Reveal as="p" i={2}>Aqui, cada pessoa é ouvida, respeitada e cuidada em sua individualidade. A beleza começa ao reconhecer, com naturalidade, o que faz sentido para você.</Reveal>
-          <Reveal kind="draw" className="hairline" />
-          <Reveal as="p" i={3} className="eyebrow">Cuidar também é se reconhecer</Reveal>
-        </div>
+    <div className="marquee" aria-hidden="true">
+      <div className="marquee-track">
+        {[0, 1].map((g) => (
+          <div className="marquee-group" key={g}>
+            {names.map((n) => <span key={n + g}>{n}<i /></span>)}
+          </div>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }
 
-function Approach() {
+/* ---------- Posicionamento: texto que se acende com a rolagem ---------- */
+function Word({ w, i, n, progress, still }: { w: string; i: number; n: number; progress: MotionValue<number>; still: boolean }) {
+  const start = (i / n) * 0.86;
+  // piso de 0,56: texto grande ainda legível (contraste mínimo 3:1) antes de acender
+  const o = useTransform(progress, [start, start + 0.14], [0.56, 1]);
+  return <m.span style={{ opacity: still ? 1 : o }}>{w} </m.span>;
+}
+
+function Statement() {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.88', 'end 0.5'] });
+  const words = statement.split(' ');
   return (
-    <section className="approach" id="abordagem" aria-labelledby="approach-title">
-      <div className="wrap approach-grid">
-        <div className="approach-head">
-          <Reveal as="p" className="eyebrow">Abordagem individualizada</Reveal>
-          <h2 id="approach-title">
-            <Reveal as="span" i={0} className="block">Primeiro, a pessoa.</Reveal>
-            <Reveal as="span" i={1} className="block"><em>Depois, o protocolo.</em></Reveal>
-          </h2>
-          <Reveal as="p" i={2} className="lede">Mais do que técnicas, acreditamos em escuta, planejamento e caminhos que respeitam seu tempo, sua história e seus objetivos.</Reveal>
-        </div>
-        <ol className="approach-list">
+    <section className="statement" aria-labelledby="statement-title">
+      <div className="wrap">
+        <h2 id="statement-title" className="sr-only">Nossa abordagem</h2>
+        <p className="statement-text" ref={ref}>
+          <span className="sr-only">{statement}</span>
+          <span aria-hidden="true">{words.map((w, i) => <Word key={i} w={w} i={i} n={words.length} progress={scrollYProgress} still={!!reduce} />)}</span>
+        </p>
+        <ol className="approach">
           {approach.map(([title, text], n) => (
             <li key={title}>
               <Reveal kind="draw" className="hairline" i={n} />
-              <Reveal i={n} className="approach-item">
-                <span className="num" aria-hidden="true">0{n + 1}</span>
-                <div><h3>{title}</h3><p>{text}</p></div>
-              </Reveal>
+              <Reveal i={n} className="approach-item"><h3>{title}</h3><p>{text}</p></Reveal>
             </li>
           ))}
         </ol>
-        <div className="approach-art" aria-hidden="true" data-depth="30"><Wing tone="rose" className="w-d" /><Wing tone="light" className="w-e" /></div>
       </div>
     </section>
   );
 }
 
-function Cares({ whatsapp }: { whatsapp: string }) {
-  const [active, setActive] = useState(0);
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
-  const rail = useRef<HTMLDivElement>(null);
-  const select = (n: number, focus = false) => {
-    const i = (n + cares.length) % cares.length;
-    setActive(i);
-    if (focus) tabs.current[i]?.focus();
-  };
-  useEffect(() => {
-    const r = rail.current, t = tabs.current[active];
-    if (r && t && r.scrollWidth > r.clientWidth) r.scrollTo({ left: t.offsetLeft - (r.clientWidth - t.offsetWidth) / 2, behavior: 'smooth' });
-  }, [active]);
-  const onKey = (e: KeyboardEvent) => {
-    const map: Record<string, number> = { ArrowDown: active + 1, ArrowRight: active + 1, ArrowUp: active - 1, ArrowLeft: active - 1, Home: 0, End: cares.length - 1 };
-    if (e.key in map) { e.preventDefault(); select(map[e.key], true); }
-  };
+/* ---------- Protocolos: três retângulos que abrem ao clique ---------- */
+type Group = { id: string; label: string; icon: AssetKey; ids: string[] };
+const groups: Group[] = [
+  { id: 'corpo', label: 'Corpo', icon: 'iconBodyLight', ids: ['gluteos', 'celulite', 'aumento'] },
+  { id: 'rosto', label: 'Rosto', icon: 'iconFacialLight', ids: ['preenchimento', 'botox', 'bioestimulador', 'lavieen', 'ultraformer'] },
+  { id: 'cabelo', label: 'Cabelo', icon: 'iconHairLight', ids: ['capilar'] },
+];
+
+function Protocols({ whatsapp }: { whatsapp: string }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const [pick, setPick] = useState<Record<string, string>>({ corpo: 'gluteos', rosto: 'preenchimento', cabelo: 'capilar' });
   return (
-    <section className="cares" id="cuidados" aria-labelledby="cares-title">
+    <section className="protocols" id="protocolos" aria-labelledby="protocols-title">
       <div className="wrap">
-        <div className="cares-head">
-          <Reveal as="p" className="eyebrow">Cuidados</Reveal>
-          <h2 id="cares-title"><Reveal as="span" className="block">Tratamentos que partem de</Reveal><Reveal as="span" i={1} className="block"><em>uma boa avaliação.</em></Reveal></h2>
-          <Reveal as="p" i={2} className="lede">Escolha um destaque para ver como a Vitalize o apresenta. Indicações clínicas, resultados e valores continuam pendentes de confirmação.</Reveal>
+        <div className="protocols-head">
+          <h2 id="protocols-title"><Reveal as="span" className="block">Protocolos</Reveal></h2>
+          <Reveal as="p" i={1} className="lede">Toque em uma área para abrir os protocolos. A indicação é sempre definida na avaliação.</Reveal>
         </div>
-        <div className="cares-body">
-          <div className="care-rail" ref={rail} role="tablist" aria-label="Cuidados em destaque" aria-orientation="vertical" onKeyDown={onKey}>
-            {cares.map((c, n) => (
-              <button key={c.id} ref={(el) => { tabs.current[n] = el; }} role="tab" type="button" id={`tab-${c.id}`} aria-selected={active === n} aria-controls={`panel-${c.id}`} tabIndex={active === n ? 0 : -1} onClick={() => select(n)}>
-                <span className="care-n" aria-hidden="true">0{n + 1}</span><span className="care-l">{c.label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="care-stage">
-            {cares.map((c, n) => {
-              const on = active === n;
-              const style = { '--c1': c.tone[0], '--c2': c.tone[1], '--rot': `${c.rot}deg`, '--shape': c.shape } as Vars;
-              return (
-                <div key={c.id} className="care-panel" role="tabpanel" id={`panel-${c.id}`} aria-labelledby={`tab-${c.id}`} data-on={on} inert={!on} style={style}>
-                  <div className="care-visual">
-                    <span className="care-ghost" aria-hidden="true">{c.label}</span>
-                    <Wing tone="light" className="care-wing" />
-                    {c.photo
-                      ? <figure className="care-photo" style={{ "--nw": `${Math.round(assets[c.photo].width * 1.15)}px` } as Vars}><Photo k={c.photo} sizes="260px" /><figcaption>Publicação oficial</figcaption></figure>
-                      : <figure className={`care-photo care-pending${c.flip ? ' is-flip' : ''}`}><Photo k={c.icon as AssetKey} sizes="240px" /><figcaption>Imagem a confirmar</figcaption></figure>}
-                  </div>
-                  <div className="care-copy">
-                    <p className="eyebrow">Destaque 0{n + 1} de 0{cares.length}</p>
-                    <h3>{c.label}</h3>
-                    <p>{c.text}</p>
-                    <p className="pending">Conteúdo a confirmar com a Bruna</p>
-                    <a className="btn btn-light" href={whatsapp} target="_blank" rel="noreferrer"><span>Agendar avaliação</span><Arrow /></a>
+        <div className="svc-list">
+          {groups.map((g, n) => {
+            const isOpen = open === g.id;
+            const items = protocols.filter((p) => g.ids.includes(p.id));
+            const cur = items.find((p) => p.id === pick[g.id]) ?? items[0];
+            return (
+              <div key={g.id} className="svc" data-open={isOpen} data-reveal="rise" style={{ '--i': n } as Vars}>
+                <Image className="svc-art" src={url(assets[g.icon].src)} alt="" width={640} height={640} />
+                <h3 className="svc-title">
+                  <button type="button" className="svc-head" aria-expanded={isOpen} aria-controls={`svc-${g.id}`} onClick={() => setOpen(isOpen ? null : g.id)}>
+                    <span className="svc-name">{g.label}</span>
+                    <span className="svc-sub">{items.map((p) => p.label).join(' · ')}</span>
+                    <span className="svc-go" aria-hidden="true"><Arrow /></span>
+                  </button>
+                </h3>
+                <div className="collapse" id={`svc-${g.id}`} data-open={isOpen} inert={!isOpen}>
+                  <div className="collapse-in">
+                    <div className="svc-body">
+                      <div className="svc-items" role="group" aria-label={`Protocolos de ${g.label}`}>
+                        {items.map((p) => (
+                          <button key={p.id} type="button" className="svc-item" aria-pressed={cur.id === p.id} onClick={() => setPick((s) => ({ ...s, [g.id]: p.id }))}>{p.label}</button>
+                        ))}
+                      </div>
+                      <div className="svc-detail" key={cur.id}>
+                        <div className="svc-text">
+                          <p className="what">{cur.what}</p>
+                          <p><span className="k">Como funciona</span>{cur.how}</p>
+                          {cur.note && <p className="svc-note">{cur.note}</p>}
+                        </div>
+                        <div className="frames">
+                          <figure className="frame"><span>Antes</span><small>Foto a confirmar</small></figure>
+                          <figure className="frame"><span>Depois</span><small>Foto a confirmar</small></figure>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="svc-foot">
+          <a className="btn btn-light" href={whatsapp} target="_blank" rel="noreferrer"><span>Agendar avaliação</span><Arrow /></a>
+          <p>Resultados variam de pessoa para pessoa. Textos gerais sobre cada técnica; a forma de aplicação da Vitalize é confirmada pela Bruna. Fotos de resultados só entram com autorização por escrito.</p>
         </div>
       </div>
     </section>
   );
 }
 
-function Professional({ whatsapp }: { whatsapp: string }) {
+/* ---------- Valores ---------- */
+function Values({ whatsapp }: { whatsapp: string }) {
   return (
-    <section className="pro" id="bruna" aria-labelledby="pro-title">
-      <div className="wrap pro-grid">
-        <div className="pro-photo" data-reveal="wipe">
-          <div className="pro-arch" />
-          <Wing tone="rose" className="w-f" />
-          <Photo k="bruna" sizes="(max-width: 700px) 90vw, 44vw" className="pro-person" />
-        </div>
-        <div className="pro-copy">
-          <Reveal as="p" className="eyebrow">Quem cuida de você</Reveal>
-          <Reveal as="p" i={1} className="pro-name">Bruna Vitali<span>Biomédica Esteta</span></Reveal>
-          <h2 id="pro-title"><Reveal as="span" i={2} className="block">Técnica para orientar.</Reveal><Reveal as="span" i={3} className="block"><em>Sensibilidade para reconhecer limites.</em></Reveal></h2>
-          <Reveal as="p" i={4} className="lede">A Vitalize apresenta Bruna Vitali como a profissional à frente dos atendimentos. Sua comunicação coloca a naturalidade, a individualidade e o planejamento no centro da experiência.</Reveal>
-          <Reveal as="p" i={5} className="pending">Registro profissional e formação: a confirmar</Reveal>
-          <Reveal i={6}><a className="btn btn-outline" href={whatsapp} target="_blank" rel="noreferrer"><span>Agendar avaliação</span><Arrow /></a></Reveal>
+    <section className="values" id="valores" aria-labelledby="values-title">
+      <div className="wrap values-grid">
+        <h2 id="values-title"><Reveal as="span" className="block">Valores</Reveal><Reveal as="span" i={1} className="block"><em>sob avaliação.</em></Reveal></h2>
+        <div className="values-copy">
+          <Reveal as="p" i={2} className="values-lead">Não temos valor pronto para a maior parte dos procedimentos. Cada indicação é definida depois da avaliação, de acordo com o plano de cuidado de cada pessoa.</Reveal>
+          <Reveal as="p" i={3} className="muted">Isso vale também para os procedimentos faciais.</Reveal>
+          <Reveal i={4}><a className="btn btn-primary" href={whatsapp} target="_blank" rel="noreferrer"><span>Tirar dúvidas pelo WhatsApp</span><Arrow /></a></Reveal>
         </div>
       </div>
     </section>
   );
 }
 
-function Differentials() {
-  return (
-    <section className="diff" aria-labelledby="diff-title">
-      <div className="wrap diff-grid">
-        <div className="diff-head">
-          <Reveal as="p" className="eyebrow">A experiência</Reveal>
-          <h2 id="diff-title"><Reveal as="span" className="block">Cuidado que</Reveal><Reveal as="span" i={1} className="block"><em>começa pela escuta.</em></Reveal></h2>
-        </div>
-        <ul className="diff-list">
-          {differentials.map(([t, d], n) => (
-            <li key={t}>
-              <Reveal kind="draw" className="hairline" i={n} />
-              <Reveal i={n} className="diff-row"><span className="num" aria-hidden="true">0{n + 1}</span><h3>{t}</h3><p>{d}</p></Reveal>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </section>
-  );
-}
-
-function Atmosphere() {
-  return (
-    <section className="atmos" aria-labelledby="atmos-title">
-      <div className="wrap atmos-grid">
-        <div className="atmos-art" aria-hidden="false">
-          <div className="atmos-field" data-depth="22"><Wing tone="light" className="w-g" /><Wing tone="rose" className="w-h" /></div>
-          <figure className="atmos-plate" data-reveal="wipe" style={{ "--nw": `${Math.round(assets.ambient.width * 1.15)}px` } as Vars}><Photo k="ambient" sizes="200px" /><figcaption>Publicação oficial</figcaption></figure>
-        </div>
-        <div className="atmos-copy">
-          <Reveal as="p" className="eyebrow">Ambiente</Reveal>
-          <h2 id="atmos-title"><Reveal as="span" className="block">Um espaço para</Reveal><Reveal as="span" i={1} className="block"><em>se sentir à vontade.</em></Reveal></h2>
-          <Reveal as="p" i={2} className="lede">A atmosfera da Vitalize é acolhedora, em tons quentes e naturais, no coração de Criciúma.</Reveal>
-          <Reveal as="p" i={3} className="pending">Fotos do espaço: a receber</Reveal>
-          <Reveal i={4}><address>Ed. Millenium Saúde Center<br />Rua Cel. Pedro Benedet, 505 · sala 503<br />Centro · Criciúma, SC</address></Reveal>
-          <Reveal i={5}><a className="textlink" href={mapUrl} target="_blank" rel="noreferrer">Ver no mapa <Arrow /></a></Reveal>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// Experiência de assinatura: a câmera percorre a fotografia enquanto a asa se desenha.
-function Journey() {
+/* ---------- Bruna ---------- */
+function About({ whatsapp }: { whatsapp: string }) {
   const ref = useRef<HTMLElement>(null);
-  const [step, setStep] = useState(0);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const wide = window.matchMedia('(min-width: 901px)');
-    let raf = 0, visible = false;
-    const update = () => {
-      raf = 0;
-      const r = el.getBoundingClientRect(), vh = window.innerHeight;
-      if (reduce.matches) return;
-      let p: number, s: number;
-      if (wide.matches) {
-        p = Math.max(0, Math.min(1, -r.top / Math.max(1, r.height - vh)));
-        s = Math.min(steps.length - 1, Math.floor(p * steps.length));
-      } else {
-        p = Math.max(0, Math.min(1, (vh * 0.6 - r.top) / Math.max(1, r.height)));
-        const items = Array.from(el.querySelectorAll<HTMLElement>('.journey-steps li'));
-        s = 0;
-        items.forEach((li, n) => { if (li.getBoundingClientRect().top < vh * 0.55) s = n; });
-      }
-      el.style.setProperty('--p', p.toFixed(3));
-      setStep(s);
-    };
-    const onScroll = () => { if (visible && !raf) raf = requestAnimationFrame(update); };
-    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; if (visible) onScroll(); }, { rootMargin: '10% 0px' });
-    io.observe(el);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => { io.disconnect(); window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, []);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const y = useTransform(scrollYProgress, [0.1, 0.55], [reduce ? 0 : 56, 0]);
   return (
-    <section className="journey" id="etapas" ref={ref} aria-labelledby="journey-title" style={{ '--p': 0 } as Vars}>
-      <div className="journey-pin">
-        <div className="wrap journey-grid">
-          <div className="journey-frame" style={framing[step]}>
-            <div className="journey-photo"><Photo k="scene" sizes="(max-width: 900px) 90vw, 40vw" /></div>
-            <div className="journey-tint" />
-            <svg className="journey-trace" viewBox="0 0 220 300" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
-              <path pathLength={1} d="M108 6C176 58 206 128 178 186C160 222 124 238 96 232C60 190 52 116 108 6Z" />
-              <path pathLength={1} d="M92 232C122 214 162 224 172 252C146 282 108 276 82 250Z" />
-            </svg>
-            <p className="journey-tag" aria-hidden="true">{steps[step][2]}</p>
-          </div>
-          <div className="journey-text">
-            <p className="eyebrow">Etapas do atendimento</p>
-            <h2 id="journey-title">Um caminho claro,<br /><em>sem decisões apressadas.</em></h2>
-            <div className="journey-steps">
-              <span className="journey-rail" aria-hidden="true"><i /></span>
-              <ol>
-                {steps.map(([t, d], n) => (
-                  <li key={t} data-state={n === step ? 'now' : n < step ? 'done' : 'next'}>
-                    <span className="dot" aria-hidden="true">{n + 1}</span>
-                    <div><h3>{t}</h3><p>{d}</p></div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          </div>
+    <section className="about" id="bruna" ref={ref} aria-labelledby="about-title">
+      <div className="wrap about-grid">
+        <div className="about-media">
+          <div className="about-panel" data-reveal="wipe" />
+          <m.div className="about-cutout" style={{ y }}>
+            <Photo k="bruna" sizes="(max-width: 1023px) 80vw, 480px" />
+          </m.div>
+        </div>
+        <div className="about-copy">
+          <Reveal as="p" className="about-name">Bruna Vitali<span>Biomédica Esteta</span></Reveal>
+          <h2 id="about-title"><Reveal as="span" i={1} className="block">Técnica para orientar.</Reveal><Reveal as="span" i={2} className="block"><em>Sensibilidade para reconhecer limites.</em></Reveal></h2>
+          <Reveal as="p" i={3} className="about-text">A Vitalize apresenta Bruna Vitali como a profissional à frente dos atendimentos. Sua comunicação coloca a naturalidade, a individualidade e o planejamento no centro da experiência.</Reveal>
+          <Reveal as="p" i={4} className="pending">Registro profissional e formação: a confirmar</Reveal>
+          <Reveal i={5}><a className="btn btn-outline" href={whatsapp} target="_blank" rel="noreferrer"><span>Agendar avaliação</span><Arrow /></a></Reveal>
         </div>
       </div>
     </section>
   );
 }
 
+/* ---------- Etapas: a borboleta percorre a trilha com a rolagem ---------- */
+function Steps() {
+  const ref = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
+  const [step, setStep] = useState(0);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 70%', 'end 55%'] });
+  const left = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+  useMotionValueEvent(scrollYProgress, 'change', (v) => setStep(v < 0.34 ? 0 : v < 0.67 ? 1 : 2));
+  return (
+    <section className="steps" id="etapas" ref={ref} aria-labelledby="steps-title">
+      <div className="wrap">
+        <div className="steps-head">
+          <h2 id="steps-title"><Reveal as="span" className="block">Um caminho claro,</Reveal><Reveal as="span" i={1} className="block"><em>sem decisões apressadas.</em></Reveal></h2>
+        </div>
+        <div className="steps-track">
+          <div className="trail-h" aria-hidden="true">
+            <m.span className="fly-h" style={{ left: reduce ? '100%' : left }}>
+              <Image src={url(assets.butterfly.src)} alt="" width={260} height={254} />
+            </m.span>
+          </div>
+          <div className="trail-v" aria-hidden="true">
+            <Image className="fly-v" src={url(assets.butterfly.src)} alt="" width={260} height={254} />
+          </div>
+          <ol className="steps-list">
+            {steps.map(([t, d], n) => (
+              <Reveal as="li" key={t} i={n} className="step">
+                <span className="step-dot" data-on={reduce || n <= step} aria-hidden="true" />
+                <span className="step-n" aria-hidden="true">{pad2(n + 1)}</span>
+                <h3>{t}</h3>
+                <p>{d}</p>
+              </Reveal>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Dúvidas ---------- */
 function Faq() {
   return (
     <section className="faq" id="duvidas" aria-labelledby="faq-title">
       <div className="wrap faq-grid">
-        <div className="faq-head">
-          <Reveal as="p" className="eyebrow">Dúvidas frequentes</Reveal>
-          <h2 id="faq-title"><Reveal as="span" className="block">O que costuma</Reveal><Reveal as="span" i={1} className="block"><em>aparecer primeiro.</em></Reveal></h2>
-        </div>
+        <h2 id="faq-title"><Reveal as="span" className="block">Dúvidas</Reveal><Reveal as="span" i={1} className="block"><em>frequentes.</em></Reveal></h2>
         <div className="faq-list">
           {faqs.map(([q, a], n) => (
             <Reveal key={q} i={n % 3} className="faq-item">
@@ -528,55 +462,80 @@ function Faq() {
   );
 }
 
-function Closing({ whatsapp }: { whatsapp: string }) {
+/* ---------- Contato ---------- */
+function Contact({ whatsapp }: { whatsapp: string }) {
+  const ref = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'center center'] });
+  const x1 = useTransform(scrollYProgress, [0, 1], [reduce ? '0%' : '-8%', '0%']);
+  const x2 = useTransform(scrollYProgress, [0, 1], [reduce ? '0%' : '8%', '0%']);
   return (
-    <section className="closing" id="contato" aria-labelledby="closing-title">
-      <div className="wrap closing-grid">
-        <div className="closing-copy">
-          <Reveal as="p" className="eyebrow">Próximo passo</Reveal>
-          <h2 id="closing-title"><Reveal as="span" className="block">Vamos conversar</Reveal><Reveal as="span" i={1} className="block"><em>sobre você?</em></Reveal></h2>
-          <Reveal as="p" i={2} className="lede">Agende uma avaliação e conte o que deseja. A indicação depende da análise individual.</Reveal>
-          <Reveal i={3} className="closing-actions">
-            <a className="btn btn-primary" href={whatsapp} target="_blank" rel="noreferrer"><span>Agendar avaliação</span><Arrow /></a>
-            <a className="btn btn-quiet" href="https://www.instagram.com/esteticavitalize/" target="_blank" rel="noreferrer">Instagram ↗</a>
+    <section className="contact" id="contato" ref={ref} aria-labelledby="contact-title">
+      <div className="wrap">
+        <h2 id="contact-title" className="contact-title">
+          <m.span className="block" style={{ x: x1 }}>Agende sua</m.span>
+          <m.span className="block" style={{ x: x2 }}><em>avaliação.</em></m.span>
+        </h2>
+        <div className="contact-grid">
+          <Reveal className="contact-cta">
+            <p>Conte o que deseja. A indicação depende da análise individual.</p>
+            <a className="btn btn-light btn-lg" href={whatsapp} target="_blank" rel="noreferrer"><span>Agendar avaliação</span><Arrow /></a>
+            <p className="note">O botão abre o WhatsApp oficial da Vitalize. A página não envia formulário nem confirma horário.</p>
           </Reveal>
-          <Reveal as="p" i={4} className="hero-note">O botão abre o WhatsApp oficial da Vitalize. A página não envia formulário nem confirma horário.</Reveal>
+          <Reveal i={1} className="contact-info">
+            <div>
+              <span className="k">Endereço</span>
+              <address>Ed. Millenium Saúde Center<br />Rua Cel. Pedro Benedet, 505 · sala 503<br />Centro · Criciúma, SC</address>
+              <a className="textlink" href={mapUrl} target="_blank" rel="noreferrer">Ver no mapa <Arrow /></a>
+            </div>
+            <div>
+              <span className="k">Redes</span>
+              <a className="textlink" href={instagram} target="_blank" rel="noreferrer">@esteticavitalize <ArrowOut /></a>
+            </div>
+          </Reveal>
         </div>
-        <Reveal kind="wipe" className="closing-card">
-          <Image src={url(assets.logo.src)} alt="Vitalize Estética Avançada" width={380} height={190} />
-          <address>Ed. Millenium Saúde Center<br />Rua Cel. Pedro Benedet, 505 · sala 503<br />Centro · Criciúma, SC</address>
-          <a className="textlink" href={mapUrl} target="_blank" rel="noreferrer">Ver no mapa <Arrow /></a>
-        </Reveal>
       </div>
     </section>
   );
 }
 
+function Footer() {
+  return (
+    <footer className="footer">
+      <div className="wrap footer-grid">
+        <a className="footer-logo" href="#inicio" aria-label="Voltar ao início"><Image src={url(assets.logo.src)} alt="Vitalize Estética Avançada" width={180} height={90} /></a>
+        <nav className="footer-nav" aria-label="Rodapé">
+          <a href="#protocolos">Protocolos</a><a href="#valores">Valores</a><a href="#bruna">Bruna Vitali</a><a href="#etapas">Etapas</a><a href="#duvidas">Dúvidas</a>
+        </nav>
+        <p className="footer-addr">Ed. Millenium Saúde Center · Rua Cel. Pedro Benedet, 505, sala 503 · Centro · Criciúma, SC</p>
+        <p className="footer-small">© {new Date().getFullYear()} Vitalize Estética Avançada. Procedimentos requerem avaliação individual. Resultados podem variar. Prévia de demonstração: imagens e conteúdos sujeitos à aprovação da cliente.</p>
+      </div>
+    </footer>
+  );
+}
+
 export default function VitalizeExperience({ whatsapp }: Props) {
   useMotion();
+  const { current, scrolled, atContact, atHero } = useSections();
   return (
-    <>
-      <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
-      <WingDefs />
-      <Header whatsapp={whatsapp} />
-      <main id="conteudo">
-        <Hero whatsapp={whatsapp} />
-        <Proposal />
-        <Approach />
-        <Cares whatsapp={whatsapp} />
-        <Professional whatsapp={whatsapp} />
-        <Differentials />
-        <Atmosphere />
-        <Journey />
-        <Faq />
-        <Closing whatsapp={whatsapp} />
-      </main>
-      <footer>
-        <a href="#inicio" aria-label="Voltar ao início"><Image src={url(assets.logo.src)} alt="Vitalize Estética Avançada" width={145} height={75} /></a>
-        <p>© {new Date().getFullYear()} Vitalize Estética Avançada</p>
-        <a href="https://www.instagram.com/esteticavitalize/" target="_blank" rel="noreferrer">Instagram ↗</a>
-        <small>Procedimentos requerem avaliação individual. Resultados podem variar. Prévia de demonstração: imagens e conteúdos sujeitos à aprovação da cliente.</small>
-      </footer>
-    </>
+    <MotionConfig reducedMotion="user">
+      <LazyMotion features={domAnimation} strict>
+        <a className="skip-link" href="#conteudo">Pular para o conteúdo</a>
+        <Bar whatsapp={whatsapp} current={current} scrolled={scrolled} />
+        <main id="conteudo">
+          <Hero whatsapp={whatsapp} />
+          <Marquee />
+          <Statement />
+          <Protocols whatsapp={whatsapp} />
+          <Values whatsapp={whatsapp} />
+          <About whatsapp={whatsapp} />
+          <Steps />
+          <Faq />
+          <Contact whatsapp={whatsapp} />
+        </main>
+        <Footer />
+        <a className={`dock${atContact || atHero ? ' is-hidden' : ''}`} href={whatsapp} target="_blank" rel="noreferrer" tabIndex={atContact || atHero ? -1 : 0}><span>Agendar avaliação</span><Arrow /></a>
+      </LazyMotion>
+    </MotionConfig>
   );
 }

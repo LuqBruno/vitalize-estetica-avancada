@@ -18,6 +18,8 @@ const sans = Manrope({
 export const metadata: Metadata = {
   metadataBase: new URL('https://luqbruno.github.io/vitalize-estetica-avancada/'),
   title: 'Vitalize Estética Avançada | Criciúma',
+  // Prévia de demonstração: fora dos buscadores até aprovação comercial.
+  robots: { index: false, follow: false },
   description: 'Atendimento estético facial e corporal personalizado, com naturalidade, individualidade e propósito em Criciúma.',
   openGraph: {
     title: 'Vitalize Estética Avançada',
