@@ -9,7 +9,7 @@ Atualização: 16/09/2026. Nova direção visual da prévia local, com prioridad
 - Conteúdo/decisões pendentes: Contratação, procedimentos, dados profissionais e imagens a confirmar.
 - Decisão vigente: usar a assinatura oficial da marca, tons quentes coordenados e composição editorial. Categorias de cuidado ficam todas visíveis, em vez de cards de Instagram ampliados.
 - Próxima ação: colher revisão visual de Bruno e validar com Bruna os retratos tratados antes de qualquer apresentação ou publicação comercial.
-- Publicação atual: prévia publicada em `https://luqbruno.github.io/vitalize-estetica-avancada/` em 17/09/2026; não equivale a aprovação comercial da cliente.
+- Publicação atual: a landing de largura total foi publicada em `https://luqbruno.github.io/vitalize-estetica-avancada/` em 15/10/2026 (commit `ed48e6a`, workflow 38748333630 concluído com sucesso), por autorização expressa de Bruno na conversa. Conferido no endereço público: página e imagens com HTTP 200, hero e protocolos renderizados em 1440 e 390 px, sem rolagem horizontal; o 404 de `icon.jpg` na raiz do domínio já existia. Prévia de demonstração com `noindex`; não equivale a aprovação comercial da cliente nem a autorização de uso das imagens.
 - 17/09/2026: GitHub Pages configurado em `LuqBruno/vitalize-estetica-avancada`. Corrigidos os caminhos e a posição dos assets compilados para a rota `/vitalize-estetica-avancada/`. Workflow #6 concluído com sucesso; página, CSS e retrato principal retornaram HTTP 200; a primeira dobra foi conferida visualmente no domínio público com estilo e fotografia carregados.
 - Comercial: [consultar pipeline](../../00_Leads_e_Propostas/PIPELINE.md).
 
